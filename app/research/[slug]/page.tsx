@@ -4,34 +4,41 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getReportBySlug, researchReports } from "@/lib/research-data"
+import { fetchReportBySlug } from "@/lib/research-data"
 import { ArrowLeft, AlertTriangle, FileText, ExternalLink } from "lucide-react"
-
-export function generateStaticParams() {
-  return researchReports.map((report) => ({
-    slug: report.slug,
-  }))
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const report = getReportBySlug(slug)
-  
-  if (!report) {
-    return {
-      title: "Report Not Found | HAVEN Equities",
-    }
-  }
 
-  return {
-    title: `${report.company} (${report.ticker}) | HAVEN Equities Research`,
-    description: report.summary,
+  try {
+    const report = await fetchReportBySlug(slug)
+
+    if (!report) {
+      return {
+        title: "Report Not Found | HAVEN Equities",
+      }
+    }
+
+    return {
+      title: `${report.company} (${report.ticker}) | HAVEN Equities Research`,
+      description: report.summary,
+    }
+  } catch (error) {
+    return {
+      title: "Research Report | HAVEN Equities",
+    }
   }
 }
 
 export default async function ReportPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const report = getReportBySlug(slug)
+  let report
+
+  try {
+    report = await fetchReportBySlug(slug)
+  } catch (error) {
+    report = null
+  }
 
   if (!report) {
     notFound()
@@ -94,14 +101,20 @@ export default async function ReportPage({ params }: { params: Promise<{ slug: s
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-foreground">Key Risks (Educational)</h4>
-                    <ul className="mt-2 space-y-2">
-                      {report.keyRisks.map((risk, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
-                          {risk}
-                        </li>
-                      ))}
-                    </ul>
+                    {report.keyRisks.length > 0 ? (
+                      <ul className="mt-2 space-y-2">
+                        {report.keyRisks.map((risk, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+                            {risk}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Key risks will be listed once the report is finalized.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -146,14 +159,20 @@ export default async function ReportPage({ params }: { params: Promise<{ slug: s
                   <CardTitle className="font-serif text-xl">Sources</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
-                    {report.sources.map((source, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
-                        {source}
-                      </li>
-                    ))}
-                  </ul>
+                  {report.sources.length > 0 ? (
+                    <ul className="space-y-2">
+                      {report.sources.map((source, index) => (
+                        <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/50" />
+                          {source}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Source citations will appear here once the report is published.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
