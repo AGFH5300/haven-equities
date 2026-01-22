@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -8,16 +8,54 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { researchReports, sectors, getFilteredReports } from "@/lib/research-data"
-import { Search, ArrowRight, FileText } from "lucide-react"
-import { useSearchParams, Suspense } from "next/navigation"
+import {
+  fetchResearchReports,
+  getFilteredReports,
+  ResearchReport,
+  sectors,
+} from "@/lib/research-data"
+import { Search, ArrowRight, FileText, AlertTriangle } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 export default function ResearchPage() {
   const searchParams = useSearchParams()
   const [selectedSector, setSelectedSector] = useState(searchParams.get("sector") || "All Sectors")
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
+  const [reports, setReports] = useState<ResearchReport[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const filteredReports = getFilteredReports(selectedSector, searchQuery)
+  useEffect(() => {
+    let isMounted = true
+
+    const loadReports = async () => {
+      try {
+        setIsLoading(true)
+        const data = await fetchResearchReports()
+        if (!isMounted) return
+        setReports(data)
+        setErrorMessage(null)
+      } catch (error) {
+        if (!isMounted) return
+        setErrorMessage("Unable to load research reports at the moment.")
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadReports()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const filteredReports = useMemo(
+    () => getFilteredReports(reports, selectedSector, searchQuery),
+    [reports, selectedSector, searchQuery]
+  )
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -73,7 +111,25 @@ export default function ResearchPage() {
         {/* Research Grid */}
         <section className="py-12 lg:py-16">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            {filteredReports.length > 0 ? (
+            {isLoading ? (
+              <Card className="border-border bg-card">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 font-serif text-lg font-medium text-foreground">Loading reports</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Fetching the latest research library from our database.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : errorMessage ? (
+              <Card className="border-border bg-card">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <AlertTriangle className="h-12 w-12 text-destructive" />
+                  <h3 className="mt-4 font-serif text-lg font-medium text-foreground">Reports unavailable</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{errorMessage}</p>
+                </CardContent>
+              </Card>
+            ) : filteredReports.length > 0 ? (
               <>
                 <p className="mb-8 text-sm text-muted-foreground">
                   Showing {filteredReports.length} report{filteredReports.length !== 1 ? "s" : ""}
