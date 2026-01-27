@@ -7,24 +7,34 @@ import { CheckCircle, ArrowRight, Users, Target, Shield, GraduationCap } from "l
 
 const leadership = [
   {
-    name: "Founder",
-    role: "Managing Director",
-    description: "Oversees strategic direction and portfolio case study.",
+    name: "Rushil Bhandari",
+    role: "Founder & CEO",
+    description: "Leads strategic direction and portfolio case study execution.",
+    image: "/images/team-placeholder.svg",
   },
   {
-    name: "Head of Research",
-    role: "Research Lead",
-    description: "Manages research quality and publication approval.",
+    name: "Joseph Augustine",
+    role: "Chief Financial Officer",
+    description: "Oversees capital stewardship and financial operations.",
+    image: "/images/team-placeholder.svg",
   },
   {
-    name: "Communications Lead",
-    role: "Comms & Branding",
-    description: "Handles report formatting and external communications.",
+    name: "Evan Kung",
+    role: "Chief Operating Officer",
+    description: "Manages day-to-day operations and project execution.",
+    image: "/images/team-placeholder.svg",
   },
   {
-    name: "Chief Technology Officer",
-    role: "Technology",
-    description: "Manages website and content management systems.",
+    name: "Ansh Gupta",
+    role: "Chief Technology Officer",
+    description: "Leads product, data, and web infrastructure.",
+    image: "/images/team-placeholder.svg",
+  },
+  {
+    name: "Juan Rufino",
+    role: "Chief Marketing Officer",
+    description: "Drives brand storytelling and community outreach.",
+    image: "/images/team-placeholder.svg",
   },
 ]
 
@@ -179,14 +189,25 @@ export default function AboutPage() {
             <p className="mt-4 text-muted-foreground">
               The team driving our educational mission.
             </p>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {leadership.map((member) => (
                 <Card key={member.name} className="border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
-                    <CardDescription className="text-sm font-medium text-primary">
-                      {member.role}
-                    </CardDescription>
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 overflow-hidden rounded-full border border-border">
+                        <img
+                          src={member.image}
+                          alt={`${member.name} headshot placeholder`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
+                        <CardDescription className="text-sm font-medium text-primary">
+                          {member.role}
+                        </CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">{member.description}</p>

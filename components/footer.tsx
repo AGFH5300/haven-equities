@@ -5,6 +5,8 @@ const navigation = [
   { name: "Research", href: "/research" },
   { name: "Portfolio Case Study", href: "/portfolio-case-study" },
   { name: "About", href: "/about" },
+  { name: "Join Us", href: "/internship-application" },
+  { name: "Contact", href: "/contact" },
   { name: "Compliance", href: "/compliance" },
 ]
 
