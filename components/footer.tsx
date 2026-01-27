@@ -5,7 +5,7 @@ const navigation = [
   { name: "Research", href: "/research" },
   { name: "Portfolio Case Study", href: "/portfolio-case-study" },
   { name: "About", href: "/about" },
-  { name: "Join Us", href: "/internship-application" },
+  { name: "Join Us", href: "https://tinyurl.com/haven-equities-internship" },
   { name: "Contact", href: "/contact" },
   { name: "Compliance", href: "/compliance" },
 ]

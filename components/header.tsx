@@ -10,10 +10,11 @@ const navigation = [
   { name: "Research", href: "/research" },
   { name: "Portfolio Case Study", href: "/portfolio-case-study" },
   { name: "About", href: "/about" },
-  { name: "Join Us", href: "/internship-application" },
   { name: "Contact", href: "/contact" },
   { name: "Compliance", href: "/compliance" },
 ]
+
+const joinUsHref = "https://tinyurl.com/haven-equities-internship"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -51,6 +52,12 @@ export function Header() {
             </Link>
           ))}
         </div>
+
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+          <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href={joinUsHref}>Join Us</Link>
+          </Button>
+        </div>
       </nav>
 
       {/* Mobile menu */}
@@ -67,6 +74,9 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            <Button asChild className="mt-2 w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link href={joinUsHref}>Join Us</Link>
+            </Button>
           </div>
         </div>
       )}

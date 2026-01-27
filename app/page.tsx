@@ -62,7 +62,7 @@ export default async function HomePage() {
               {/* CTA buttons */}
               <div className="mt-12 flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8">
-                  <Link href="/internship-application">
+                  <Link href="https://tinyurl.com/haven-equities-internship">
                     Join Us Now
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
