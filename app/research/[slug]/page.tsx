@@ -127,16 +127,20 @@ export default async function ReportPage({ params }: { params: Promise<{ slug: s
                 <CardContent>
                   {report.pdfUrl ? (
                     <div className="space-y-4">
-                      <div className="aspect-[8.5/11] w-full overflow-hidden rounded-lg border border-border bg-muted">
+                      <div className="h-[75vh] w-full overflow-hidden rounded-lg border border-border bg-muted lg:h-[80vh]">
                         <iframe
-                          src={report.pdfUrl}
+                          src={`/api/research/report-pdf/${report.slug}`}
                           className="h-full w-full"
                           title={`${report.company} Research Report`}
                         />
                       </div>
                       <Button asChild variant="outline">
-                        <a href={report.pdfUrl} target="_blank" rel="noopener noreferrer">
-                          Open PDF in New Tab
+                        <a
+                          href={`/api/research/report-pdf/${report.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open Report in New Tab
                           <ExternalLink className="ml-2 h-4 w-4" />
                         </a>
                       </Button>
