@@ -62,8 +62,8 @@ export default async function HomePage() {
               {/* CTA buttons */}
               <div className="mt-12 flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8">
-                  <Link href="/research">
-                    Explore Research
+                  <Link href="/internship-application">
+                    Join Us Now
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -73,7 +73,7 @@ export default async function HomePage() {
                   size="lg"
                   className="border-border text-foreground hover:bg-secondary bg-transparent px-8"
                 >
-                  <Link href="/about">Our Mission</Link>
+                  <Link href="/about">About Us</Link>
                 </Button>
               </div>
               
@@ -95,11 +95,6 @@ export default async function HomePage() {
             </div>
           </div>
           
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">Scroll</span>
-            <div className="h-12 w-px bg-gradient-to-b from-muted-foreground/70 to-transparent" />
-          </div>
         </section>
 
         {/* Three Pillars - Horizontal showcase */}
