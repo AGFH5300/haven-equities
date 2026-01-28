@@ -1,18 +1,33 @@
-const requiredEnv = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "REPORTS_BUCKET"]
+const requiredEnv = ["SUPABASE_SERVICE_ROLE_KEY", "REPORTS_BUCKET"]
 
-for (const key of requiredEnv) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required env var: ${key}`)
+const getConfig = () => {
+  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  const missing = requiredEnv.filter((key) => !process.env[key])
+
+  if (!supabaseUrl) {
+    missing.unshift("SUPABASE_URL")
+  }
+
+  if (missing.length) {
+    return { error: `Missing required env var(s): ${missing.join(", ")}` }
+  }
+
+  const allowedEmails = (
+    process.env.SYSTEM_ALLOWED_EMAILS ??
+    process.env.SYSTEM_GOOGLE_ALLOWLIST ??
+    ""
+  )
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+
+  return {
+    supabaseUrl,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+    reportsBucket: process.env.REPORTS_BUCKET as string,
+    allowedEmails,
   }
 }
-
-const supabaseUrl = process.env.SUPABASE_URL as string
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
-const reportsBucket = process.env.REPORTS_BUCKET as string
-const allowedEmails = (process.env.SYSTEM_ALLOWED_EMAILS ?? "")
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean)
 
 const splitList = (value: string | null): string[] => {
   if (!value) return []
@@ -29,6 +44,15 @@ const unauthorized = (message: string) =>
   })
 
 export async function POST(request: Request) {
+  const config = getConfig()
+
+  if ("error" in config) {
+    return new Response(JSON.stringify({ error: config.error }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
   const authHeader = request.headers.get("Authorization")
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
 
@@ -36,10 +60,10 @@ export async function POST(request: Request) {
     return unauthorized("Missing access token.")
   }
 
-  const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+  const userResponse = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: serviceRoleKey,
+      apikey: config.serviceRoleKey,
     },
   })
 
@@ -54,7 +78,7 @@ export async function POST(request: Request) {
     return unauthorized("Unable to resolve user email.")
   }
 
-  if (allowedEmails.length > 0 && !allowedEmails.includes(email)) {
+  if (config.allowedEmails.length > 0 && !config.allowedEmails.includes(email)) {
     return new Response(JSON.stringify({ error: "Access denied." }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
@@ -104,12 +128,12 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(await file.arrayBuffer())
 
   const uploadResponse = await fetch(
-    `${supabaseUrl}/storage/v1/object/${reportsBucket}/${storagePath}`,
+    `${config.supabaseUrl}/storage/v1/object/${config.reportsBucket}/${storagePath}`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: serviceRoleKey,
+        Authorization: `Bearer ${config.serviceRoleKey}`,
+        apikey: config.serviceRoleKey,
         "Content-Type": file.type || "application/pdf",
         "x-upsert": "true",
       },
@@ -125,13 +149,13 @@ export async function POST(request: Request) {
     })
   }
 
-  const pdfUrl = `${supabaseUrl}/storage/v1/object/public/${reportsBucket}/${storagePath}`
+  const pdfUrl = `${config.supabaseUrl}/storage/v1/object/public/${config.reportsBucket}/${storagePath}`
 
-  const insertResponse = await fetch(`${supabaseUrl}/rest/v1/research_reports`, {
+  const insertResponse = await fetch(`${config.supabaseUrl}/rest/v1/research_reports`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
+      apikey: config.serviceRoleKey,
       "Content-Type": "application/json",
       Prefer: "return=representation",
     },
