@@ -10,31 +10,31 @@ const leadership = [
     name: "Rushil Bhandari",
     role: "Founder & CEO",
     description: "Leads strategic direction and portfolio case study execution.",
-    image: "/images/team-placeholder.svg",
+    image: "/images/rushil-bhandari.jpeg",
   },
   {
     name: "Joseph Augustine",
     role: "Chief Financial Officer",
     description: "Oversees capital stewardship and financial operations.",
-    image: "/images/team-placeholder.svg",
+    image: "/images/joseph-augustine.jpeg",
   },
   {
     name: "Evan Kung",
     role: "Chief Operating Officer",
     description: "Manages day-to-day operations and project execution.",
-    image: "/images/team-placeholder.svg",
+    image: "/images/evan-kung.jpeg",
   },
   {
     name: "Ansh Gupta",
     role: "Chief Technology Officer",
     description: "Leads product, data, and web infrastructure.",
-    image: "/images/team-placeholder.svg",
+    image: "/images/ansh-gupta.jpg",
   },
   {
     name: "Juan Rufino",
     role: "Chief Marketing Officer",
     description: "Drives brand storytelling and community outreach.",
-    image: "/images/team-placeholder.svg",
+    image: "/images/juan-rufino.jpeg",
   },
 ]
 
