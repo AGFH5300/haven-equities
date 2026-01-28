@@ -34,3 +34,56 @@ without exposing the Supabase file URL.
 2. Open the report detail page at `/research/<slug>`.
 3. Confirm the embedded PDF renders full-screen in the iframe. The PDF is delivered through the
    `/api/research/report-pdf/<slug>` proxy route, so the Supabase URL is not exposed.
+
+## Optional: upload via the admin web page (`/system`)
+
+This is the simplest workflow if you want to upload reports directly in the browser.
+
+1. Set these environment variables (server and client):
+
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+   SUPABASE_URL="https://your-project.supabase.co"
+   SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+   REPORTS_BUCKET="reports"
+   SYSTEM_ALLOWED_EMAILS="you@example.com,other-admin@example.com"
+   ```
+
+2. Visit `/system` and sign in with Google.
+3. Only emails listed in `SYSTEM_ALLOWED_EMAILS` can upload reports.
+4. Fill in the form and upload the PDF. The server uploads to Supabase Storage and inserts the
+   `research_reports` row.
+
+## Optional: upload via the terminal (owner-only)
+
+Use the script below to upload a PDF and insert the report metadata in one step. This requires the
+Supabase service role key, so keep it local and never expose it in the browser.
+
+1. Create a `.env.local` with the server-only values:
+
+   ```bash
+   SUPABASE_URL="https://your-project.supabase.co"
+   SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+   REPORTS_BUCKET="reports"
+   ```
+
+2. Run the upload script with report metadata as environment variables:
+
+   ```bash
+   REPORT_SLUG="apple-q4-2024" \\
+   REPORT_COMPANY="Apple Inc." \\
+   REPORT_TICKER="AAPL" \\
+   REPORT_SECTOR="Technology" \\
+   REPORT_CYCLE="4" \\
+   REPORT_ANALYST="Jane Doe" \\
+   REPORT_PUBLISH_DATE="2024-10-15" \\
+   REPORT_SUMMARY="Apple shows resilient services growth despite hardware headwinds." \\
+   REPORT_THESIS="Services expansion and ecosystem stickiness drive durable cash flows." \\
+   REPORT_KEY_RISKS="Hardware demand softness|Regulatory pressure on App Store fees|FX headwinds" \\
+   REPORT_SOURCES="Apple 10-K 2024|IDC mobile phone tracker|Company earnings call Q4 2024" \\
+   node scripts/upload-report.mjs /absolute/path/to/report.pdf
+   ```
+
+The script uploads the PDF into `REPORTS_BUCKET/<slug>/` and inserts the report row with the
+generated `pdf_url`.
