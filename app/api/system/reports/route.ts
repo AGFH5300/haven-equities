@@ -1,31 +1,37 @@
 const requiredEnv = ["SUPABASE_SERVICE_ROLE_KEY", "REPORTS_BUCKET"]
 
+const splitCsv = (value: string | undefined) =>
+  (value ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+
 const getConfig = () => {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   const missing = requiredEnv.filter((key) => !process.env[key])
 
-  if (!supabaseUrl) {
-    missing.unshift("SUPABASE_URL")
-  }
+  if (!supabaseUrl) missing.unshift("SUPABASE_URL")
+  if (!anonKey) missing.unshift("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
   if (missing.length) {
     return { error: `Missing required env var(s): ${missing.join(", ")}` }
   }
 
-  const allowedEmails = (
-    process.env.SYSTEM_ALLOWED_EMAILS ??
-    process.env.SYSTEM_GOOGLE_ALLOWLIST ??
-    ""
+  const allowedEmails = splitCsv(
+    process.env.SYSTEM_ALLOWED_EMAILS ?? process.env.SYSTEM_GOOGLE_ALLOWLIST ?? ""
   )
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
+
+  const allowedDomains = splitCsv(process.env.SYSTEM_GOOGLE_ALLOWED_DOMAINS ?? "")
 
   return {
     supabaseUrl,
+    anonKey: anonKey as string,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
     reportsBucket: process.env.REPORTS_BUCKET as string,
     allowedEmails,
+    allowedDomains,
   }
 }
 
@@ -37,62 +43,57 @@ const splitList = (value: string | null): string[] => {
     .filter(Boolean)
 }
 
-const unauthorized = (message: string) =>
-  new Response(JSON.stringify({ error: message }), {
-    status: 401,
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
     headers: { "Content-Type": "application/json" },
   })
 
+const unauthorized = (message: string) => json(401, { error: message })
+
+const isAllowed = (email: string, allowEmails: string[], allowDomains: string[]) => {
+  const e = email.toLowerCase().trim()
+  const domain = e.split("@")[1] ?? ""
+  if (allowEmails.length > 0 && allowEmails.includes(e)) return true
+  if (allowDomains.length > 0 && allowDomains.includes(domain)) return true
+
+  // If BOTH lists are empty → allow nobody (safer default)
+  if (allowEmails.length === 0 && allowDomains.length === 0) return false
+
+  return false
+}
+
 export async function POST(request: Request) {
   const config = getConfig()
-
-  if ("error" in config) {
-    return new Response(JSON.stringify({ error: config.error }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
-  }
+  if ("error" in config) return json(500, { error: config.error })
 
   const authHeader = request.headers.get("Authorization")
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+  if (!token) return unauthorized("Missing access token.")
 
-  if (!token) {
-    return unauthorized("Missing access token.")
-  }
-
+  // ✅ Verify user identity using the *user token* (GoTrue) + anon key
   const userResponse = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      apikey: config.serviceRoleKey,
+      apikey: config.anonKey,
     },
   })
 
-  if (!userResponse.ok) {
-    return unauthorized("Invalid access token.")
-  }
+  if (!userResponse.ok) return unauthorized("Invalid access token.")
 
   const user = (await userResponse.json()) as { email?: string }
-  const email = user.email?.toLowerCase()
+  const email = user.email?.toLowerCase().trim()
+  if (!email) return unauthorized("Unable to resolve user email.")
 
-  if (!email) {
-    return unauthorized("Unable to resolve user email.")
-  }
-
-  if (config.allowedEmails.length > 0 && !config.allowedEmails.includes(email)) {
-    return new Response(JSON.stringify({ error: "Access denied." }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    })
+  if (!isAllowed(email, config.allowedEmails, config.allowedDomains)) {
+    return json(403, { error: "Access denied." })
   }
 
   const formData = await request.formData()
   const file = formData.get("pdf")
 
   if (!(file instanceof File)) {
-    return new Response(JSON.stringify({ error: "PDF file is required." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    })
+    return json(400, { error: "PDF file is required." })
   }
 
   const slug = formData.get("slug")?.toString().trim()
@@ -118,15 +119,15 @@ export async function POST(request: Request) {
     !thesis ||
     Number.isNaN(cycle)
   ) {
-    return new Response(JSON.stringify({ error: "Missing required fields." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    })
+    return json(400, { error: "Missing required fields." })
   }
 
-  const storagePath = `${slug}/${file.name}`
+  // Optional: sanitize file name a bit
+  const safeName = (file.name || "report.pdf").replace(/[^\w.\-() ]+/g, "_")
+  const storagePath = `${slug}/${safeName}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
+  // ✅ Upload with Service Role (server-only)
   const uploadResponse = await fetch(
     `${config.supabaseUrl}/storage/v1/object/${config.reportsBucket}/${storagePath}`,
     {
@@ -143,14 +144,12 @@ export async function POST(request: Request) {
 
   if (!uploadResponse.ok) {
     const errorText = await uploadResponse.text()
-    return new Response(JSON.stringify({ error: errorText || "Upload failed." }), {
-      status: 502,
-      headers: { "Content-Type": "application/json" },
-    })
+    return json(502, { error: errorText || "Upload failed." })
   }
 
   const pdfUrl = `${config.supabaseUrl}/storage/v1/object/public/${config.reportsBucket}/${storagePath}`
 
+  // ✅ Insert with Service Role
   const insertResponse = await fetch(`${config.supabaseUrl}/rest/v1/research_reports`, {
     method: "POST",
     headers: {
@@ -177,16 +176,9 @@ export async function POST(request: Request) {
 
   if (!insertResponse.ok) {
     const errorText = await insertResponse.text()
-    return new Response(JSON.stringify({ error: errorText || "Insert failed." }), {
-      status: 502,
-      headers: { "Content-Type": "application/json" },
-    })
+    return json(502, { error: errorText || "Insert failed." })
   }
 
   const inserted = await insertResponse.json()
-
-  return new Response(JSON.stringify({ pdfUrl, report: inserted }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  })
+  return json(200, { pdfUrl, report: inserted })
 }
