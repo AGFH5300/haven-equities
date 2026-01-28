@@ -55,23 +55,6 @@ const storeSession = (session: Session | null) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
 }
 
-const fetchUserEmail = async (accessToken: string) => {
-  if (!supabaseUrl || !supabaseAnonKey) return null
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      apikey: supabaseAnonKey,
-    },
-  })
-
-  if (!response.ok) {
-    return null
-  }
-
-  const data = (await response.json()) as { email?: string }
-  return data.email ?? null
-}
-
 const refreshSession = async (refreshToken: string) => {
   if (!supabaseUrl || !supabaseAnonKey) return null
   const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
@@ -100,6 +83,12 @@ const refreshSession = async (refreshToken: string) => {
 
 export default function SystemPage() {
   const [session, setSession] = useState<Session | null>(null)
+
+  // NEW: server-verified gate
+  const [gateStatus, setGateStatus] = useState<
+    "signed_out" | "checking" | "allowed" | "denied"
+  >("signed_out")
+
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formState, setFormState] = useState({
@@ -123,6 +112,7 @@ export default function SystemPage() {
       const stored: Session = { ...maybeSession }
       storeSession(stored)
       setSession(stored)
+      // remove hash
       window.history.replaceState(null, "", window.location.pathname)
       return
     }
@@ -133,6 +123,7 @@ export default function SystemPage() {
     }
   }, [])
 
+  // Keep session fresh
   useEffect(() => {
     const syncSession = async () => {
       if (!session) return
@@ -142,6 +133,7 @@ export default function SystemPage() {
         if (!refreshed) {
           storeSession(null)
           setSession(null)
+          setGateStatus("signed_out")
           return
         }
         setSession((prev) => ({
@@ -150,36 +142,73 @@ export default function SystemPage() {
         }))
         storeSession(refreshed)
       }
-
-      if (!session.email) {
-        const email = await fetchUserEmail(session.accessToken)
-        if (email) {
-          const nextSession = { ...session, email }
-          setSession(nextSession)
-          storeSession(nextSession)
-        }
-      }
     }
 
     void syncSession()
   }, [session])
+
+  // NEW: server-side allow check (this is the important part)
+  useEffect(() => {
+    const checkAllowed = async () => {
+      if (!session?.accessToken) {
+        setGateStatus("signed_out")
+        return
+      }
+
+      setGateStatus("checking")
+
+      const res = await fetch("/api/system/me", {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+      })
+
+      if (!res.ok) {
+        storeSession(null)
+        setSession(null)
+        setGateStatus("signed_out")
+        return
+      }
+
+      const data = (await res.json()) as { allowed: boolean; email: string | null }
+
+      if (!data.allowed) {
+        // kill local token & gate
+        storeSession(null)
+        setSession(null)
+        setGateStatus("denied")
+        return
+      }
+
+      // allowed: keep email for UI
+      setSession((prev) => (prev ? { ...prev, email: data.email ?? prev.email } : prev))
+      setGateStatus("allowed")
+    }
+
+    void checkAllowed()
+  }, [session?.accessToken])
 
   const handleSignIn = () => {
     if (!supabaseUrl || !supabaseAnonKey) {
       setStatusMessage("Missing Supabase environment variables.")
       return
     }
+
+    // IMPORTANT: redirect back to /system (your current hash-token flow expects this)
     const redirectTo = `${window.location.origin}/system`
+
     const url = new URL(`${supabaseUrl}/auth/v1/authorize`)
     url.searchParams.set("provider", "google")
     url.searchParams.set("redirect_to", redirectTo)
     url.searchParams.set("apikey", supabaseAnonKey)
+
     window.location.href = url.toString()
   }
 
   const handleSignOut = () => {
     storeSession(null)
     setSession(null)
+    setGateStatus("signed_out")
     setStatusMessage("Signed out.")
   }
 
@@ -192,8 +221,8 @@ export default function SystemPage() {
       return
     }
 
-    if (!session?.accessToken) {
-      setStatusMessage("Please sign in first.")
+    if (gateStatus !== "allowed" || !session?.accessToken) {
+      setStatusMessage("You are not authorized.")
       return
     }
 
@@ -228,9 +257,7 @@ export default function SystemPage() {
 
       const data = (await response.json()) as { error?: string; pdfUrl?: string }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Upload failed.")
-      }
+      if (!response.ok) throw new Error(data.error || "Upload failed.")
 
       setStatusMessage(`Report uploaded successfully. PDF URL: ${data.pdfUrl}`)
       setFormState({
@@ -248,11 +275,7 @@ export default function SystemPage() {
       })
       setFile(null)
     } catch (error) {
-      if (error instanceof Error) {
-        setStatusMessage(error.message)
-      } else {
-        setStatusMessage("Upload failed.")
-      }
+      setStatusMessage(error instanceof Error ? error.message : "Upload failed.")
     } finally {
       setIsSubmitting(false)
     }
@@ -263,6 +286,51 @@ export default function SystemPage() {
     return statusMessage.toLowerCase().includes("success") ? "text-emerald-600" : "text-destructive"
   }, [statusMessage])
 
+  /**
+   * ✅ HARD HIDE RULE:
+   * - If NOT allowed: show only the Google button (and optionally “Not allowed”)
+   * - Only when allowed: render the full console (header/footer/upload form)
+   */
+  if (gateStatus === "signed_out") {
+    return (
+      <main className="min-h-screen grid place-items-center bg-background px-6">
+        <Button onClick={handleSignIn}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="41" height="17">
+            <g fill="none" fillRule="evenodd">
+              <path d="M13.448 7.134c0-.473-.04-.93-.116-1.366H6.988v2.588h3.634a3.11 3.11 0 0 1-1.344 2.042v1.68h2.169c1.27-1.17 2.001-2.9 2.001-4.944" fill="#4285F4" />
+              <path d="M6.988 13.7c1.816 0 3.344-.595 4.459-1.621l-2.169-1.681c-.603.406-1.38.643-2.29.643-1.754 0-3.244-1.182-3.776-2.774H.978v1.731a6.728 6.728 0 0 0 6.01 3.703" fill="#34A853" />
+              <path d="M3.212 8.267a4.034 4.034 0 0 1 0-2.572V3.964H.978A6.678 6.678 0 0 0 .261 6.98c0 1.085.26 2.11.717 3.017l2.234-1.731z" fill="#FABB05" />
+              <path d="M6.988 2.921c.992 0 1.88.34 2.58 1.008v.001l1.92-1.918C10.324.928 8.804.262 6.989.262a6.728 6.728 0 0 0-6.01 3.702l2.234 1.731c.532-1.592 2.022-2.774 3.776-2.774" fill="#E94235" />
+            </g>
+          </svg>
+          Sign in with Google
+        </Button>
+      </main>
+    )
+  }
+
+  if (gateStatus === "checking") {
+    return (
+      <main className="min-h-screen grid place-items-center bg-background px-6">
+        <p className="text-sm text-muted-foreground">Checking access…</p>
+      </main>
+    )
+  }
+
+  if (gateStatus === "denied") {
+    return (
+      <main className="min-h-screen grid place-items-center bg-background px-6 text-center">
+        <div className="space-y-3">
+          <p className="text-sm text-destructive font-medium">Not allowed.</p>
+          <Button onClick={handleSignIn}>
+            Sign in with a different Google account
+          </Button>
+        </div>
+      </main>
+    )
+  }
+
+  // ✅ allowed → render your full page
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -283,31 +351,16 @@ export default function SystemPage() {
           <div className="mx-auto max-w-4xl px-6 lg:px-8">
             <Card>
               <CardHeader>
-                <CardTitle>Sign in</CardTitle>
-                <CardDescription>Use Google sign-in to access the admin uploader.</CardDescription>
+                <CardTitle>Signed in</CardTitle>
+                <CardDescription>You are authorized to upload reports.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
-                  {session?.accessToken ? (
-                    <>
-                      Signed in {session.email ? `as ${session.email}` : "successfully"}.
-                    </>
-                  ) : (
-                    "You must sign in before uploading reports."
-                  )}
+                  Signed in {session?.email ? `as ${session.email}` : "successfully"}.
                 </div>
-                <div className="flex gap-3">
-                  {!session?.accessToken ? (
-                    <Button type="button" onClick={handleSignIn}>
-                       <svg xmlns="http://www.w3.org/2000/svg" width="41" height="17"><g fill="none" fillRule="evenodd"><path d="M13.448 7.134c0-.473-.04-.93-.116-1.366H6.988v2.588h3.634a3.11 3.11 0 0 1-1.344 2.042v1.68h2.169c1.27-1.17 2.001-2.9 2.001-4.944" fill="#4285F4"/><path d="M6.988 13.7c1.816 0 3.344-.595 4.459-1.621l-2.169-1.681c-.603.406-1.38.643-2.29.643-1.754 0-3.244-1.182-3.776-2.774H.978v1.731a6.728 6.728 0 0 0 6.01 3.703" fill="#34A853"/><path d="M3.212 8.267a4.034 4.034 0 0 1 0-2.572V3.964H.978A6.678 6.678 0 0 0 .261 6.98c0 1.085.26 2.11.717 3.017l2.234-1.731z" fill="#FABB05"/><path d="M6.988 2.921c.992 0 1.88.34 2.58 1.008v.001l1.92-1.918C10.324.928 8.804.262 6.989.262a6.728 6.728 0 0 0-6.01 3.702l2.234 1.731c.532-1.592 2.022-2.774 3.776-2.774" fill="#E94235"/></g></svg>
-                      Sign in with Google
-                    </Button>
-                  ) : (
-                    <Button type="button" variant="outline" onClick={handleSignOut}>
-                      Sign out
-                    </Button>
-                  )}
-                </div>
+                <Button type="button" variant="outline" onClick={handleSignOut}>
+                  Sign out
+                </Button>
               </CardContent>
             </Card>
 
@@ -318,6 +371,7 @@ export default function SystemPage() {
               </CardHeader>
               <CardContent>
                 <form className="space-y-6" onSubmit={handleSubmit}>
+                  {/* --- your existing form unchanged below --- */}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="slug">
@@ -333,6 +387,7 @@ export default function SystemPage() {
                         required
                       />
                     </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="company">
                         Company
@@ -347,6 +402,7 @@ export default function SystemPage() {
                         required
                       />
                     </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="ticker">
                         Ticker
@@ -361,6 +417,7 @@ export default function SystemPage() {
                         required
                       />
                     </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground">Sector</label>
                       <Select
@@ -383,6 +440,7 @@ export default function SystemPage() {
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="cycle">
                         Cycle
@@ -398,6 +456,7 @@ export default function SystemPage() {
                         required
                       />
                     </div>
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="analyst">
                         Analyst
@@ -412,6 +471,7 @@ export default function SystemPage() {
                         required
                       />
                     </div>
+
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-medium text-foreground" htmlFor="publishDate">
                         Publish date
