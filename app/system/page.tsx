@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { Header } from "@/components/header"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -90,7 +89,11 @@ export default function SystemPage() {
   >("signed_out")
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDragActive, setIsDragActive] = useState(false)
+  const [isDropZoneActive, setIsDropZoneActive] = useState(false)
+  const dragCounter = useRef(0)
   const [formState, setFormState] = useState({
     slug: "",
     company: "",
@@ -151,6 +154,9 @@ export default function SystemPage() {
   useEffect(() => {
     const checkAllowed = async () => {
       if (!session?.accessToken) {
+        if (gateStatus === "denied") {
+          return
+        }
         setGateStatus("signed_out")
         return
       }
@@ -186,7 +192,69 @@ export default function SystemPage() {
     }
 
     void checkAllowed()
-  }, [session?.accessToken])
+  }, [gateStatus, session?.accessToken])
+
+  useEffect(() => {
+    const handleDragEnter = (event: DragEvent) => {
+      event.preventDefault()
+      dragCounter.current += 1
+      setIsDragActive(true)
+    }
+
+    const handleDragOver = (event: DragEvent) => {
+      event.preventDefault()
+    }
+
+    const handleDragLeave = (event: DragEvent) => {
+      event.preventDefault()
+      dragCounter.current = Math.max(0, dragCounter.current - 1)
+      if (dragCounter.current === 0) {
+        setIsDragActive(false)
+      }
+    }
+
+    const handleDrop = (event: DragEvent) => {
+      event.preventDefault()
+      dragCounter.current = 0
+      setIsDragActive(false)
+      setIsDropZoneActive(false)
+
+      const droppedFile = event.dataTransfer?.files?.[0]
+      if (!droppedFile) return
+      if (droppedFile.type !== "application/pdf") {
+        setStatusMessage("Please upload a PDF file.")
+        return
+      }
+      setFile(droppedFile)
+      setStatusMessage(null)
+    }
+
+    window.addEventListener("dragenter", handleDragEnter)
+    window.addEventListener("dragover", handleDragOver)
+    window.addEventListener("dragleave", handleDragLeave)
+    window.addEventListener("drop", handleDrop)
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter)
+      window.removeEventListener("dragover", handleDragOver)
+      window.removeEventListener("dragleave", handleDragLeave)
+      window.removeEventListener("drop", handleDrop)
+    }
+  }, [])
+
+  const handleFileSelection = (selectedFile: File | null) => {
+    if (!selectedFile) {
+      setFile(null)
+      return
+    }
+    if (selectedFile.type !== "application/pdf") {
+      setStatusMessage("Please upload a PDF file.")
+      return
+    }
+    setFile(selectedFile)
+    setStatusMessage(null)
+    setUploadedPdfUrl(null)
+  }
 
   const handleSignIn = () => {
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -259,7 +327,8 @@ export default function SystemPage() {
 
       if (!response.ok) throw new Error(data.error || "Upload failed.")
 
-      setStatusMessage(`Report uploaded successfully. PDF URL: ${data.pdfUrl}`)
+      setStatusMessage("Report uploaded successfully.")
+      setUploadedPdfUrl(data.pdfUrl ?? null)
       setFormState({
         slug: "",
         company: "",
@@ -276,6 +345,7 @@ export default function SystemPage() {
       setFile(null)
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Upload failed.")
+      setUploadedPdfUrl(null)
     } finally {
       setIsSubmitting(false)
     }
@@ -294,7 +364,7 @@ export default function SystemPage() {
   if (gateStatus === "signed_out") {
     return (
       <main className="min-h-screen grid place-items-center bg-background px-6">
-        <Button onClick={handleSignIn}>
+        <Button onClick={handleSignIn} className="bg-white text-slate-900 hover:bg-slate-100">
           <svg xmlns="http://www.w3.org/2000/svg" width="41" height="17">
             <g fill="none" fillRule="evenodd">
               <path d="M13.448 7.134c0-.473-.04-.93-.116-1.366H6.988v2.588h3.634a3.11 3.11 0 0 1-1.344 2.042v1.68h2.169c1.27-1.17 2.001-2.9 2.001-4.944" fill="#4285F4" />
@@ -332,9 +402,7 @@ export default function SystemPage() {
 
   // ✅ allowed → render your full page
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-
+    <div className="relative flex min-h-screen flex-col">
       <main className="flex-1">
         <section className="border-b border-border bg-secondary py-12 lg:py-16">
           <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
@@ -551,16 +619,63 @@ export default function SystemPage() {
                     <label className="text-sm font-medium text-foreground" htmlFor="pdf">
                       PDF file
                     </label>
-                    <Input
-                      id="pdf"
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                      required
-                    />
+                    <div
+                      className={`rounded-lg border border-dashed px-4 py-5 transition ${
+                        isDropZoneActive
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-muted/30"
+                      }`}
+                      onDragEnter={() => setIsDropZoneActive(true)}
+                      onDragLeave={() => setIsDropZoneActive(false)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        setIsDropZoneActive(false)
+                        const droppedFile = event.dataTransfer.files?.[0] ?? null
+                        handleFileSelection(droppedFile)
+                      }}
+                    >
+                      <Input
+                        id="pdf"
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(event) => handleFileSelection(event.target.files?.[0] ?? null)}
+                        className="sr-only"
+                        required
+                      />
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">
+                            Drag and drop your PDF here
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {file?.name ? file.name : "or choose a file from your device"}
+                          </p>
+                        </div>
+                        <Button type="button" variant="outline" asChild>
+                          <label htmlFor="pdf" className="cursor-pointer">
+                            Choose file
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
-                  {statusMessage && <p className={`text-sm ${statusStyles}`}>{statusMessage}</p>}
+                  {statusMessage && (
+                    <div className={`text-sm ${statusStyles}`}>
+                      <p>{statusMessage}</p>
+                      {uploadedPdfUrl && (
+                        <a
+                          className="mt-1 inline-flex text-xs text-primary underline underline-offset-4"
+                          href={uploadedPdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Open uploaded PDF
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? "Uploading..." : "Upload report"}
@@ -571,6 +686,17 @@ export default function SystemPage() {
           </div>
         </section>
       </main>
+
+      {isDragActive && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/20 bg-black/40 px-8 py-6 text-center text-white shadow-lg backdrop-blur">
+            <div className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
+              Drop PDF to upload
+            </div>
+            <p className="text-lg font-semibold">Release to add your report</p>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

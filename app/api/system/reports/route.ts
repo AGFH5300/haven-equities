@@ -147,7 +147,32 @@ export async function POST(request: Request) {
     return json(502, { error: errorText || "Upload failed." })
   }
 
-  const pdfUrl = `${config.supabaseUrl}/storage/v1/object/public/${config.reportsBucket}/${storagePath}`
+  const signResponse = await fetch(
+    `${config.supabaseUrl}/storage/v1/object/sign/${config.reportsBucket}/${storagePath}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.serviceRoleKey}`,
+        apikey: config.serviceRoleKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: 60 * 60 * 24 * 7 }),
+    }
+  )
+
+  if (!signResponse.ok) {
+    const errorText = await signResponse.text()
+    return json(502, { error: errorText || "Unable to sign PDF URL." })
+  }
+
+  const signData = (await signResponse.json()) as { signedURL?: string }
+  if (!signData.signedURL) {
+    return json(502, { error: "Unable to sign PDF URL." })
+  }
+  const pdfUrl = signData.signedURL.startsWith("http")
+    ? signData.signedURL
+    : `${config.supabaseUrl}${signData.signedURL}`
+  const pdfPath = `${config.reportsBucket}/${storagePath}`
 
   // ✅ Insert with Service Role
   const insertResponse = await fetch(`${config.supabaseUrl}/rest/v1/research_reports`, {
@@ -170,7 +195,7 @@ export async function POST(request: Request) {
       thesis,
       key_risks: keyRisks.length ? keyRisks : null,
       sources: sources.length ? sources : null,
-      pdf_url: pdfUrl,
+      pdf_url: pdfPath,
     }),
   })
 
