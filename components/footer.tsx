@@ -48,8 +48,11 @@ export function Footer() {
             This is not investment advice. No external capital is accepted. All capital used is founder-owned. 
             See our <Link href="/compliance" className="underline hover:text-foreground">Compliance page</Link> for full details.
           </p>
-          <p className="mt-4 text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} HAVEN Equities. All rights reserved.
+          <p className="text-gray-400 text-xs sm:text-sm">
+            © 2026 Haven Equities. All rights reserved.
+          </p>
+          <p className="text-xs sm:text-sm">
+            Made by <a href="https://anshgupta.site" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ansh Gupta</a>
           </p>
         </div>
       </div>
