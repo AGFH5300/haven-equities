@@ -357,9 +357,25 @@ export default function SystemPage() {
                   {/* --- your existing form unchanged below --- */}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="slug">
-                        Slug
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="slug">
+                          Slug
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                              aria-label="Slug info"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Use a URL-friendly identifier, like company-quarter-year.
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Input
                         id="slug"
                         value={formState.slug}
@@ -441,9 +457,23 @@ export default function SystemPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="cycle">
-                        Cycle
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="cycle">
+                          Cycle
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                              aria-label="Cycle info"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Enter the report iteration number for this company.</TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Input
                         id="cycle"
                         type="number"
