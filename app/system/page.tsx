@@ -82,6 +82,7 @@ const refreshSession = async (refreshToken: string) => {
 
 export default function SystemPage() {
   const [session, setSession] = useState<Session | null>(null)
+  const [deniedEmail, setDeniedEmail] = useState<string | undefined>(undefined)
 
   // NEW: server-verified gate
   const [gateStatus, setGateStatus] = useState<
@@ -154,9 +155,6 @@ export default function SystemPage() {
   useEffect(() => {
     const checkAllowed = async () => {
       if (!session?.accessToken) {
-        if (gateStatus === "denied") {
-          return
-        }
         setGateStatus("signed_out")
         return
       }
@@ -180,6 +178,7 @@ export default function SystemPage() {
 
       if (!data.allowed) {
         // kill local token & gate
+        setDeniedEmail(data.email ?? session.email)
         storeSession(null)
         setSession(null)
         setGateStatus("denied")
@@ -188,11 +187,12 @@ export default function SystemPage() {
 
       // allowed: keep email for UI
       setSession((prev) => (prev ? { ...prev, email: data.email ?? prev.email } : prev))
+      setDeniedEmail(undefined)
       setGateStatus("allowed")
     }
 
     void checkAllowed()
-  }, [gateStatus, session?.accessToken])
+  }, [session?.accessToken, session?.email])
 
   useEffect(() => {
     const handleDragEnter = (event: DragEvent) => {
@@ -276,6 +276,7 @@ export default function SystemPage() {
   const handleSignOut = () => {
     storeSession(null)
     setSession(null)
+    setDeniedEmail(undefined)
     setGateStatus("signed_out")
     setStatusMessage("Signed out.")
   }
@@ -389,12 +390,30 @@ export default function SystemPage() {
 
   if (gateStatus === "denied") {
     return (
-      <main className="min-h-screen grid place-items-center bg-background px-6 text-center">
-        <div className="space-y-3">
-          <p className="text-sm text-destructive font-medium">Not allowed.</p>
-          <Button onClick={handleSignIn}>
-            Sign in with a different Google account
-          </Button>
+      <main className="min-h-screen bg-[#ffecdd] text-slate-900">
+        <div className="container mx-auto px-4 py-16">
+          <div className="mx-auto max-w-xl rounded-xl border border-red-200 bg-white p-8 text-center shadow-xl">
+            <h1 className="mb-2 text-xl font-semibold text-red-600">
+              Access denied
+            </h1>
+
+            <p className="text-sm text-slate-600">
+              This Google account is not authorized to access this system.
+            </p>
+
+            {deniedEmail && (
+              <p className="mt-3 text-xs text-slate-500">
+                Signed in as{" "}
+                <span className="font-mono text-slate-700">{deniedEmail}</span>
+              </p>
+            )}
+
+            <div className="mt-6">
+              <Button onClick={handleSignIn}>
+                Sign in with a different Google account
+              </Button>
+            </div>
+          </div>
         </div>
       </main>
     )
