@@ -130,6 +130,14 @@ export default function SystemLoginPage() {
     window.location.href = url.toString()
   }
 
+  const handleSignOut = () => {
+    storeSession(null)
+    sessionStorage.removeItem(DENIED_EMAIL_KEY)
+    setSession(null)
+    setDeniedEmail(null)
+    setGateStatus("signed_out")
+  }
+
   if (gateStatus === "checking") {
     return (
       <main className="min-h-screen grid place-items-center bg-background px-6">
@@ -140,23 +148,25 @@ export default function SystemLoginPage() {
 
   if (gateStatus === "denied") {
     return (
-      <main className="min-h-screen bg-[#ffecdd] text-slate-900">
+      <main className="min-h-screen bg-background text-slate-900">
         <div className="container mx-auto px-4 py-16">
-          <div className="mx-auto max-w-xl rounded-xl border border-red-200 bg-white p-8 text-center shadow-xl">
+          <div className="mx-auto max-w-xl rounded-xl border border-red-200 bg-background p-8 text-center shadow-xl">
             <h1 className="mb-2 text-xl font-semibold text-red-600">Access denied</h1>
 
-            <p className="text-sm text-slate-600">
+            <p className="text-base text-slate-600">
               This Google account is not authorized to access this system.
             </p>
 
             {deniedEmail ? (
-              <p className="mt-3 text-xs text-slate-500">
-                Signed in as <span className="font-mono text-slate-700">{deniedEmail}</span>
+              <p className="mt-3 text-base text-slate-500">
+                Signed in as <span className="font-medium text-slate-700">{deniedEmail}</span>
               </p>
             ) : null}
 
             <div className="mt-6">
-              <Button onClick={handleSignIn}>Sign in with a different Google account</Button>
+              <Button variant="outline" onClick={handleSignOut}>
+                Sign out
+              </Button>
             </div>
           </div>
         </div>
