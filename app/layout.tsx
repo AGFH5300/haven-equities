@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },
     ],
-    apple: [{ url: '/apple-touch-icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/svg+xml' }],
   },
   manifest: '/site.webmanifest',
   robots: {
