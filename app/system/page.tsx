@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Info } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { sectors } from "@/lib/research-data"
 import {
   DENIED_EMAIL_KEY,
@@ -46,6 +48,24 @@ export default function SystemPage() {
     sources: "",
   })
   const [file, setFile] = useState<File | null>(null)
+  const dateInputRef = useRef<HTMLInputElement | null>(null)
+
+  const setPublishDate = (date: string) => {
+    setFormState((prev) => ({ ...prev, publishDate: date }))
+  }
+
+  const handleTodayClick = () => {
+    const today = new Date().toISOString().split("T")[0] ?? ""
+    setPublishDate(today)
+  }
+
+  const handleOpenCalendar = () => {
+    if (dateInputRef.current?.showPicker) {
+      dateInputRef.current.showPicker()
+      return
+    }
+    dateInputRef.current?.focus()
+  }
 
   useEffect(() => {
     const stored = readStoredSession()
@@ -297,7 +317,7 @@ export default function SystemPage() {
 
   // ✅ allowed → render your full page
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-x-hidden">
       <main className="flex-1">
         <section className="border-b border-border bg-secondary py-12 lg:py-16">
           <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
@@ -367,9 +387,25 @@ export default function SystemPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="ticker">
-                        Ticker
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="ticker">
+                          Ticker
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                              aria-label="Ticker info"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Enter the stock ticker symbol (e.g., AAPL, MSFT).
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Input
                         id="ticker"
                         value={formState.ticker}
@@ -436,25 +472,55 @@ export default function SystemPage() {
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="publishDate">
-                        Publish date
-                      </label>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="publishDate">
+                          Publish date
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={handleTodayClick}>
+                            Today
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleOpenCalendar}
+                          >
+                            Pick date
+                          </Button>
+                        </div>
+                      </div>
                       <Input
                         id="publishDate"
                         type="date"
                         value={formState.publishDate}
-                        onChange={(event) =>
-                          setFormState((prev) => ({ ...prev, publishDate: event.target.value }))
-                        }
+                        onChange={(event) => setPublishDate(event.target.value)}
+                        ref={dateInputRef}
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground" htmlFor="summary">
-                      Summary
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-foreground" htmlFor="summary">
+                        Summary
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                            aria-label="Summary info"
+                          >
+                            <Info className="h-3.5 w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Provide a concise overview of the report’s key points.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Textarea
                       id="summary"
                       value={formState.summary}
@@ -467,9 +533,25 @@ export default function SystemPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground" htmlFor="thesis">
-                      Thesis
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-foreground" htmlFor="thesis">
+                        Thesis
+                      </label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                            aria-label="Thesis info"
+                          >
+                            <Info className="h-3.5 w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Describe the core investment thesis and rationale.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <Textarea
                       id="thesis"
                       value={formState.thesis}
@@ -483,9 +565,25 @@ export default function SystemPage() {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="keyRisks">
-                        Key risks (one per line)
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="keyRisks">
+                          Key risks (one per line)
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                              aria-label="Key risks info"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            List the primary risks or uncertainties, one per line.
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Textarea
                         id="keyRisks"
                         value={formState.keyRisks}
@@ -496,9 +594,25 @@ export default function SystemPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground" htmlFor="sources">
-                        Sources (one per line)
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-foreground" htmlFor="sources">
+                          Sources (one per line)
+                        </label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground transition hover:text-foreground"
+                              aria-label="Sources info"
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Provide citations or links for data used in the report.
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       <Textarea
                         id="sources"
                         value={formState.sources}
@@ -536,7 +650,6 @@ export default function SystemPage() {
                         accept="application/pdf"
                         onChange={(event) => handleFileSelection(event.target.files?.[0] ?? null)}
                         className="sr-only"
-                        required
                       />
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
