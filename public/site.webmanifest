@@ -1,0 +1,16 @@
+{
+  "name": "HAVEN Equities",
+  "short_name": "HAVEN",
+  "description": "A student-led equity research collective using founder-owned capital as an educational case study.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0C",
+  "theme_color": "#0B0B0C",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
