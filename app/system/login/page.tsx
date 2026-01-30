@@ -148,18 +148,19 @@ export default function SystemLoginPage() {
 
   if (gateStatus === "denied") {
     return (
-      <main className="min-h-screen bg-background text-slate-900">
+      <main className="min-h-screen bg-background text-foreground">
         <div className="container mx-auto px-4 py-16">
-          <div className="mx-auto max-w-xl rounded-xl border border-red-200 bg-background p-8 text-center shadow-xl">
+          <div className="mx-auto max-w-xl rounded-xl border border-border bg-background p-8 text-center shadow-xl">
             <h1 className="mb-2 text-xl font-semibold text-red-600">Access denied</h1>
 
-            <p className="text-base text-slate-600">
+            <p className="text-base text-muted-foreground">
               This Google account is not authorized to access this system.
             </p>
 
             {deniedEmail ? (
-              <p className="mt-3 text-base text-slate-500">
-                Signed in as <span className="font-medium text-slate-700">{deniedEmail}</span>
+              <p className="mt-3 text-base text-muted-foreground">
+                Signed in as{" "}
+                <span className="font-medium text-foreground">{deniedEmail}</span>
               </p>
             ) : null}
 
