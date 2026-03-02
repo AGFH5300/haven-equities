@@ -194,9 +194,9 @@ export default function AboutPage() {
             <p className="mt-4 text-muted-foreground">
               The team driving our educational mission.
             </p>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-10 flex flex-wrap justify-center gap-6">
               {leadership.map((member) => (
-                <Card key={member.name} className="border-border bg-card">
+                <Card key={member.name} className="w-full border-border bg-card sm:max-w-[calc(50%-0.75rem)] lg:max-w-[calc((100%-3rem)/3)]">
                   <CardHeader>
                     <div className="flex items-center gap-4">
                       <div className="h-16 w-16 overflow-hidden rounded-full border border-border">
