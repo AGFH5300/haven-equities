@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Menu, X } from "lucide-react"
+import { Linkedin, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const navigation = [
@@ -15,6 +15,7 @@ const navigation = [
 ]
 
 const joinUsHref = "https://tinyurl.com/haven-equities-internship"
+const havenLinkedinHref = "https://www.linkedin.com/company/haven-equities-research/"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -53,9 +54,14 @@ export function Header() {
           ))}
         </div>
 
-        <div className="hidden lg:flex lg:flex-1 lg:justify-end">
+        <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-3">
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href={joinUsHref}>Join Us</Link>
+          </Button>
+          <Button asChild variant="outline" size="icon" aria-label="HAVEN Equities LinkedIn">
+            <a href={havenLinkedinHref} target="_blank" rel="noreferrer">
+              <Linkedin className="h-4 w-4" />
+            </a>
           </Button>
         </div>
       </nav>
@@ -76,6 +82,12 @@ export function Header() {
             ))}
             <Button asChild className="mt-2 w-full bg-primary text-primary-foreground hover:bg-primary/90">
               <Link href={joinUsHref}>Join Us</Link>
+            </Button>
+            <Button asChild variant="outline" className="mt-2 w-full" aria-label="HAVEN Equities LinkedIn">
+              <a href={havenLinkedinHref} target="_blank" rel="noreferrer">
+                <Linkedin className="mr-2 h-4 w-4" />
+                Follow HAVEN on LinkedIn
+              </a>
             </Button>
           </div>
         </div>

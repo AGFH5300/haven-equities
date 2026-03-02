@@ -3,7 +3,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, ArrowRight, Users, Target, Shield, GraduationCap } from "lucide-react"
+import { CheckCircle, ArrowRight, Users, Target, Shield, GraduationCap, Linkedin } from "lucide-react"
 
 const leadership = [
   {
@@ -11,30 +11,35 @@ const leadership = [
     role: "Founder & CEO",
     description: "Leads strategic direction and portfolio case study execution.",
     image: "/images/rushil-bhandari.jpeg",
+    linkedin: "https://www.linkedin.com/in/rushilbhandari/",
   },
   {
     name: "Joseph Augustine",
     role: "Chief Financial Officer",
     description: "Oversees capital stewardship and financial operations.",
     image: "/images/joseph-augustine.jpeg",
+    linkedin: "https://www.linkedin.com/in/joseph-augustine3/",
   },
   {
     name: "Evan Kung",
     role: "Chief Operating Officer",
     description: "Manages day-to-day operations and project execution.",
     image: "/images/evan-kung.jpeg",
+    linkedin: "https://www.linkedin.com/in/evan-kung-17ba77357/",
   },
   {
     name: "Ansh Gupta",
     role: "Chief Technology Officer",
     description: "Leads product, data, and web infrastructure.",
     image: "/images/ansh-gupta.jpg",
+    linkedin: "https://www.linkedin.com/in/anshvg/",
   },
   {
     name: "Juan Rufino",
     role: "Chief Marketing Officer",
     description: "Drives brand storytelling and community outreach.",
     image: "/images/juan-rufino.jpeg",
+    linkedin: "https://www.linkedin.com/in/juan-rufino-moraleja-315263323/",
   },
 ]
 
@@ -202,7 +207,18 @@ export default function AboutPage() {
                         />
                       </div>
                       <div>
-                        <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
+                          <a
+                            href={member.linkedin}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`${member.name} LinkedIn profile`}
+                            className="text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            <Linkedin className="h-4 w-4" />
+                          </a>
+                        </div>
                         <CardDescription className="text-sm font-medium text-primary">
                           {member.role}
                         </CardDescription>
