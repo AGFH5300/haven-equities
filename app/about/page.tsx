@@ -43,6 +43,21 @@ const leadership = [
   },
 ]
 
+const partners = [
+  {
+    title: "Platform Partner",
+    name: "LockedIn",
+    logo: "/partners/lockedin.svg",
+    website: "https://www.lockedinhs.com/",
+  },
+  {
+    title: "Platform Partner",
+    name: "Coinygo",
+    logo: "/partners/coinygo.svg",
+    website: "https://coinygo.com/",
+  },
+]
+
 const ethicalPractices = [
   "No external capital accepted - all funds are founder-owned",
   "No investment advice provided to any party",
@@ -230,6 +245,34 @@ export default function AboutPage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            <div className="mt-16 border-t border-border pt-10">
+              <h3 className="font-serif text-2xl font-semibold tracking-tight text-foreground">Partners</h3>
+              <p className="mt-3 text-muted-foreground">Organizations supporting our student-led work.</p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {partners.map((partner) => (
+                  <Link
+                    key={partner.name}
+                    href={partner.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group rounded-xl border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 overflow-hidden rounded-lg border border-border bg-background p-2">
+                        <img src={partner.logo} alt={`${partner.name} logo`} className="h-full w-full object-contain" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-primary/80">{partner.title}</p>
+                        <p className="mt-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                          {partner.name}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>
