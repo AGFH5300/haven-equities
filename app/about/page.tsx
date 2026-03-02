@@ -45,13 +45,13 @@ const leadership = [
 
 const partners = [
   {
-    title: "Platform Partner",
+    title: "Talent & Student Network Partner",
     name: "LockedIn",
     logo: "/partners/lockedin.svg",
     website: "https://www.lockedinhs.com/",
   },
   {
-    title: "Platform Partner",
+    title: "Financial Educational Partner",
     name: "Coinygo",
     logo: "/partners/coinygo.svg",
     website: "https://coinygo.com/",
