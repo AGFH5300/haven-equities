@@ -53,7 +53,7 @@ export function Footer() {
               © 2026 HAVEN Equities. All rights reserved.
             </p>
             <p className="text-xs sm:text-sm">
-              Made by <a href="https://anshgupta.site" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ansh Gupta</a>
+              Made by <a href="https://anshgupta.cc" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ansh Gupta</a>
             </p>
           </div>
         </div>
