@@ -73,6 +73,19 @@ export default function ContactPage() {
 
         <section className="py-16 lg:py-20">
           <div className="mx-auto max-w-3xl px-6 lg:px-8">
+            <div className="mb-8 rounded-lg border border-border bg-card p-6 text-center">
+              <p className="text-sm font-medium text-foreground">Company Email</p>
+              <a
+                href="mailto:havenequities2026@gmail.com"
+                className="mt-2 inline-block text-base font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+              >
+                havenequities2026@gmail.com
+              </a>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                For internship, school or college verification, and general enquiries.
+              </p>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-border bg-card p-8">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
