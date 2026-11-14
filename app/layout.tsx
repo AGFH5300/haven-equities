@@ -17,25 +17,65 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.havenequities.com'),
   title: 'HAVEN Equities | Student-Led Equity Research Collective',
   description: 'A student-led equity research collective using founder-owned capital as an educational case study.',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
+  applicationName: 'HAVEN Equities',
+  keywords: [
+    'HAVEN Equities',
+    'equity research',
+    'student-led',
+    'investment research',
+    'portfolio case study',
+    'finance education',
+  ],
+  authors: [{ name: 'HAVEN Equities' }],
+  creator: 'HAVEN Equities',
+  publisher: 'HAVEN Equities',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    title: 'HAVEN Equities | Student-Led Equity Research Collective',
+    siteName: 'HAVEN Equities',
+    description: 'A student-led equity research collective using founder-owned capital as an educational case study.',
+    images: [
       {
         url: '/icon.svg',
-        type: 'image/svg+xml',
+        alt: 'HAVEN Equities',
       },
     ],
-    apple: '/apple-icon.png',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HAVEN Equities | Student-Led Equity Research Collective',
+    description: 'A student-led equity research collective using founder-owned capital as an educational case study.',
+    images: ['/apple-touch-icon.png'],
+  },
+  icons: {
+    icon: [
+      { url: '/apple-touch-icon.png', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/svg+xml' }],
+  },
+  manifest: '/site.webmanifest',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 }
 

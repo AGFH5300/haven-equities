@@ -1,3 +1,5 @@
+import { supabaseFetch } from "@/lib/supabase"
+
 export interface ResearchReport {
   slug: string
   company: string
@@ -13,31 +15,45 @@ export interface ResearchReport {
   pdfUrl?: string
 }
 
-// Sample research data - in production this would come from a CMS/database/Google Sheet
-export const researchReports: ResearchReport[] = [
-  {
-    slug: "sample-report-technology-cycle-1",
-    company: "Sample Company",
-    ticker: "SMPL",
-    sector: "Technology",
-    cycle: 1,
-    analyst: "Research Team",
-    publishDate: "2026-01-16",
-    summary: "This is a sample report demonstrating the report format and structure for educational purposes.",
-    thesis: "This sample report demonstrates how research reports are structured within HAVEN Equities. It showcases the format, metadata fields, and educational framing used across all published research.",
-    keyRisks: [
-      "This is a sample risk factor for demonstration purposes",
-      "Reports would include company-specific and market risks",
-      "All risks are presented for educational context only",
-    ],
-    sources: [
-      "Company SEC Filings",
-      "Industry Reports",
-      "Management Presentations",
-    ],
-    pdfUrl: undefined, // PDF would be linked here when available
-  },
-]
+type ResearchReportRow = {
+  slug: string
+  company: string
+  ticker: string
+  sector: string
+  cycle: number
+  analyst: string
+  publish_date: string
+  summary: string
+  thesis: string
+  key_risks: string[] | string | null
+  sources: string[] | string | null
+  pdf_url: string | null
+}
+
+const normalizeStringArray = (value: string[] | string | null): string[] => {
+  if (!value) return []
+  if (Array.isArray(value)) return value
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+const mapReport = (report: ResearchReportRow): ResearchReport => ({
+  slug: report.slug,
+  company: report.company,
+  ticker: report.ticker,
+  sector: report.sector,
+  cycle: report.cycle,
+  analyst: report.analyst,
+  publishDate: report.publish_date,
+  summary: report.summary,
+  thesis: report.thesis,
+  keyRisks: normalizeStringArray(report.key_risks),
+  sources: normalizeStringArray(report.sources),
+  pdfUrl: report.pdf_url ?? undefined,
+})
 
 export const sectors = [
   "All Sectors",
@@ -54,15 +70,34 @@ export const sectors = [
   "Communication Services",
 ]
 
-export function getReportBySlug(slug: string): ResearchReport | undefined {
-  return researchReports.find((report) => report.slug === slug)
+const reportSelectFields =
+  "slug, company, ticker, sector, cycle, analyst, publish_date, summary, thesis, key_risks, sources, pdf_url"
+
+export async function fetchResearchReports(): Promise<ResearchReport[]> {
+  const data = await supabaseFetch<ResearchReportRow[]>(
+    `research_reports?select=${encodeURIComponent(reportSelectFields)}&order=publish_date.desc`
+  )
+
+  return data.map(mapReport)
+}
+
+export async function fetchReportBySlug(slug: string): Promise<ResearchReport | null> {
+  const data = await supabaseFetch<ResearchReportRow[]>(
+    `research_reports?select=${encodeURIComponent(reportSelectFields)}&slug=eq.${encodeURIComponent(
+      slug
+    )}&limit=1`
+  )
+
+  const report = data[0]
+  return report ? mapReport(report) : null
 }
 
 export function getFilteredReports(
+  reports: ResearchReport[],
   sector?: string,
   searchQuery?: string
 ): ResearchReport[] {
-  let filtered = [...researchReports]
+  let filtered = [...reports]
 
   if (sector && sector !== "All Sectors") {
     filtered = filtered.filter((report) => report.sector === sector)
@@ -77,9 +112,6 @@ export function getFilteredReports(
         report.analyst.toLowerCase().includes(query)
     )
   }
-
-  // Sort by publish date (newest first)
-  filtered.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
 
   return filtered
 }

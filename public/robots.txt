@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /system/
+Allow: /
+
+Sitemap: https://www.havenequities.com/sitemap.xml
