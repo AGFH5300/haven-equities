@@ -3,7 +3,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, ArrowRight, Users, Target, Shield, GraduationCap } from "lucide-react"
+import { CheckCircle, ArrowRight, Users, Target, Shield, GraduationCap, Linkedin } from "lucide-react"
 
 const leadership = [
   {
@@ -11,30 +11,50 @@ const leadership = [
     role: "Founder & CEO",
     description: "Leads strategic direction and portfolio case study execution.",
     image: "/images/rushil-bhandari.jpeg",
+    linkedin: "https://www.linkedin.com/in/rushilbhandari/",
   },
   {
     name: "Joseph Augustine",
     role: "Chief Financial Officer",
     description: "Oversees capital stewardship and financial operations.",
     image: "/images/joseph-augustine.jpeg",
+    linkedin: "https://www.linkedin.com/in/joseph-augustine3/",
   },
   {
     name: "Evan Kung",
     role: "Chief Operating Officer",
     description: "Manages day-to-day operations and project execution.",
     image: "/images/evan-kung.jpeg",
+    linkedin: "https://www.linkedin.com/in/evan-kung-17ba77357/",
   },
   {
     name: "Ansh Gupta",
     role: "Chief Technology Officer",
     description: "Leads product, data, and web infrastructure.",
     image: "/images/ansh-gupta.jpg",
+    linkedin: "https://www.linkedin.com/in/anshvg/",
   },
   {
     name: "Juan Rufino",
     role: "Chief Marketing Officer",
     description: "Drives brand storytelling and community outreach.",
     image: "/images/juan-rufino.jpeg",
+    linkedin: "https://www.linkedin.com/in/juan-rufino-moraleja-315263323/",
+  },
+]
+
+const partners = [
+  {
+    title: "Platform Partner",
+    name: "LockedIn",
+    logo: "/partners/lockedin.svg",
+    website: "https://www.lockedinhs.com/",
+  },
+  {
+    title: "Platform Partner",
+    name: "Coinygo",
+    logo: "/partners/coinygo.svg",
+    website: "https://coinygo.com/",
   },
 ]
 
@@ -189,9 +209,9 @@ export default function AboutPage() {
             <p className="mt-4 text-muted-foreground">
               The team driving our educational mission.
             </p>
-            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-10 flex flex-wrap justify-center gap-6">
               {leadership.map((member) => (
-                <Card key={member.name} className="border-border bg-card">
+                <Card key={member.name} className="w-full border-border bg-card sm:max-w-[calc(50%-0.75rem)] lg:max-w-[calc((100%-3rem)/3)]">
                   <CardHeader>
                     <div className="flex items-center gap-4">
                       <div className="h-16 w-16 overflow-hidden rounded-full border border-border">
@@ -202,7 +222,18 @@ export default function AboutPage() {
                         />
                       </div>
                       <div>
-                        <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="font-serif text-lg">{member.name}</CardTitle>
+                          <a
+                            href={member.linkedin}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`${member.name} LinkedIn profile`}
+                            className="text-muted-foreground transition-colors hover:text-primary"
+                          >
+                            <Linkedin className="h-4 w-4" />
+                          </a>
+                        </div>
                         <CardDescription className="text-sm font-medium text-primary">
                           {member.role}
                         </CardDescription>
@@ -214,6 +245,34 @@ export default function AboutPage() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            <div className="mt-16 border-t border-border pt-10">
+              <h3 className="font-serif text-2xl font-semibold tracking-tight text-foreground">Partners</h3>
+              <p className="mt-3 text-muted-foreground">Organizations supporting our student-led work.</p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {partners.map((partner) => (
+                  <Link
+                    key={partner.name}
+                    href={partner.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group rounded-xl border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 overflow-hidden rounded-lg border border-border bg-background p-2">
+                        <img src={partner.logo} alt={`${partner.name} logo`} className="h-full w-full object-contain" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-primary/80">{partner.title}</p>
+                        <p className="mt-1 text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+                          {partner.name}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>

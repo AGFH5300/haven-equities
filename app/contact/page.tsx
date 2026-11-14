@@ -20,7 +20,14 @@ export default function ContactPage() {
     setStatus("loading")
     setErrorMessage(null)
 
-    const formData = new FormData(event.currentTarget)
+    const form = event.currentTarget
+    if (!form) {
+      setStatus("error")
+      setErrorMessage("Unable to submit the form. Please refresh and try again.")
+      return
+    }
+
+    const formData = new FormData(form)
     const payload = {
       name: String(formData.get("name") || ""),
       email: String(formData.get("email") || ""),
@@ -41,7 +48,7 @@ export default function ContactPage() {
       }
 
       setStatus("success")
-      event.currentTarget.reset()
+      form.reset()
     } catch (error) {
       setStatus("error")
       setErrorMessage(error instanceof Error ? error.message : "Unable to send message.")
