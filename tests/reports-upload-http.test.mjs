@@ -90,6 +90,22 @@ test('forged-small Content-Length cannot bypass the streamed 12 MiB multipart bo
   assert.equal(result.calls.filter(x => x.url.includes('/rest/v1/research_reports')).length, 0);
 });
 
+test('a PDF larger than 10 MiB is rejected before privileged storage writes', async () => {
+  const largePdf = new File([
+    Buffer.from('%PDF-1.7\n'),
+    Buffer.alloc(11 * 1024 * 1024, 0x41),
+  ], 'large.pdf', { type: 'application/pdf' });
+  const result = await requestRoute({ form: makeForm({ pdf: largePdf }) });
+  assert.equal(result.status, 413);
+  assert.equal(result.calls.filter(x => x.url.includes('/storage/v1/object/')).length, 0);
+});
+
+test('an announced body above the limit is rejected even when the actual form is small', async () => {
+  const result = await requestRoute({ contentLength: 15 * 1024 * 1024 });
+  assert.equal(result.status, 413);
+  assert.equal(result.calls.filter(x => x.url.includes('/storage/v1/object/')).length, 0);
+});
+
 test('HTML disguised as a PDF is rejected before any service-role storage mutation', async () => {
   const fakePdf = new File([Buffer.from('<!doctype html><title>Synthetic only</title>')], 'report.pdf', {
     type: 'application/pdf',
