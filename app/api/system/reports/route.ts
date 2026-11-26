@@ -1,4 +1,6 @@
 const requiredEnv = ["SUPABASE_SERVICE_ROLE_KEY", "REPORTS_BUCKET"]
+const MAX_MULTIPART_BODY_BYTES = 12 * 1024 * 1024
+const MAX_PDF_BYTES = 10 * 1024 * 1024
 
 const splitCsv = (value: string | undefined) =>
   (value ?? "")
@@ -51,6 +53,49 @@ const json = (status: number, body: unknown) =>
 
 const unauthorized = (message: string) => json(401, { error: message })
 
+async function boundedFormData(request: Request): Promise<FormData | Response> {
+  const contentType = request.headers.get("Content-Type") ?? ""
+  if (!contentType.toLowerCase().startsWith("multipart/form-data;")) {
+    return json(415, { error: "Multipart form data is required." })
+  }
+
+  const announcedLength = Number(request.headers.get("Content-Length"))
+  if (Number.isFinite(announcedLength) && announcedLength > MAX_MULTIPART_BODY_BYTES) {
+    return json(413, { error: "Report upload is too large." })
+  }
+
+  if (!request.body) return json(400, { error: "Missing request body." })
+  const reader = request.body.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      totalBytes += value.byteLength
+      if (totalBytes > MAX_MULTIPART_BODY_BYTES) {
+        await reader.cancel()
+        return json(413, { error: "Report upload is too large." })
+      }
+      chunks.push(value)
+    }
+  } catch {
+    return json(400, { error: "Unable to read multipart body." })
+  } finally {
+    reader.releaseLock()
+  }
+
+  try {
+    const boundedBody = new Blob(chunks.map((chunk) => new Uint8Array(chunk)))
+    return await new Response(boundedBody, {
+      headers: { "Content-Type": contentType },
+    }).formData()
+  } catch {
+    return json(400, { error: "Malformed multipart body." })
+  }
+}
+
 const isAllowed = (email: string, allowEmails: string[], allowDomains: string[]) => {
   const e = email.toLowerCase().trim()
   const domain = e.split("@")[1] ?? ""
@@ -89,11 +134,18 @@ export async function POST(request: Request) {
     return json(403, { error: "Access denied." })
   }
 
-  const formData = await request.formData()
+  const formData = await boundedFormData(request)
+  if (formData instanceof Response) return formData
   const file = formData.get("pdf")
 
   if (!(file instanceof File)) {
     return json(400, { error: "PDF file is required." })
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    return json(413, { error: "PDF file is too large." })
+  }
+  if (file.type !== "application/pdf" || !/\.pdf$/i.test(file.name)) {
+    return json(400, { error: "Only PDF files are allowed." })
   }
 
   const slug = formData.get("slug")?.toString().trim()
@@ -121,11 +173,17 @@ export async function POST(request: Request) {
   ) {
     return json(400, { error: "Missing required fields." })
   }
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(slug)) {
+    return json(400, { error: "Invalid report slug." })
+  }
 
   // Optional: sanitize file name a bit
   const safeName = (file.name || "report.pdf").replace(/[^\w.\-() ]+/g, "_")
   const storagePath = `${slug}/${safeName}`
   const buffer = Buffer.from(await file.arrayBuffer())
+  if (buffer.length < 5 || buffer.toString("ascii", 0, 5) !== "%PDF-") {
+    return json(400, { error: "Invalid PDF content." })
+  }
 
   // ✅ Upload with Service Role (server-only)
   const uploadResponse = await fetch(
