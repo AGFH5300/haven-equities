@@ -1,14 +1,33 @@
 import assert from 'node:assert/strict';
-import { stripTypeScriptTypes } from 'node:module';
+import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
-const routePath = resolve(import.meta.dirname, '../app/api/system/reports/route.ts');
+const routePath = resolve(dirname(fileURLToPath(import.meta.url)), '../app/api/system/reports/route.ts');
 const originalFetch = globalThis.fetch;
 
 const source = readFileSync(routePath, 'utf8');
-const compiled = stripTypeScriptTypes(source, { mode: 'transform' });
+let compiled;
+try {
+  const ts = createRequire(import.meta.url)('typescript');
+  compiled = ts.transpileModule(source, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+    reportDiagnostics: true,
+  });
+  assert.equal(compiled.diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error).length, 0);
+  compiled = compiled.outputText;
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') throw error;
+  // Standalone Node 24 test environments can execute without npm installs.
+  // Regular project installs use the existing TypeScript devDependency above.
+  const { stripTypeScriptTypes } = await import('node:module');
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('Install devDependencies to run this test with TypeScript on this Node version.');
+  }
+  compiled = stripTypeScriptTypes(source, { mode: 'transform' });
+}
 const { POST } = await import('data:text/javascript;base64,' + Buffer.from(compiled).toString('base64'));
 
 const ENV_VALUES = {
